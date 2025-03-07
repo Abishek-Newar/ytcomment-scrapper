@@ -46,99 +46,109 @@ app.get("/getcomments", async (req, res) => {
 
         const clickRepliesAndShowMoreReplies = async (page) => {
             console.log("Expanding replies...");
-        
+          
             const delay = (time) => new Promise(resolve => setTimeout(resolve, time));
-        
+          
             const clickButtons = async (selector) => {
-                let attempts = 0;
-                while (attempts < 5) {  // Limit to 5 attempts to prevent infinite loop
-                    await delay(2000); // Allow content to load
-        
-                    const buttons = await page.$$(selector);
-                    if (buttons.length === 0) {
-                        console.log("No more buttons found.");
-                        break; // No more buttons, exit loop
-                    }
-        
-                    let clicked = 0;
-                    for (let button of buttons) {
-                        try {
-                            if (!button) continue;
-        
-                            await button.evaluate(el => el.scrollIntoView({ behavior: "smooth", block: "center" }));
-                            await delay(1000);
-        
-                            // Ensure the button is still in the DOM and visible
-                            const isVisible = await page.evaluate(el => {
-                                const rect = el.getBoundingClientRect();
-                                return rect.height > 0 && rect.width > 0;
-                            }, button);
-        
-                            if (!isVisible) {
-                                console.warn("Skipping button: Not visible or detached");
-                                continue;
-                            }
-        
-                            await button.click();
-                            await delay(2000);
-                            clicked++;
-                        } catch (error) {
-                            console.warn(`Skipping non-clickable button:`, error.message);
-                        }
-                    }
-        
-                    if (clicked === 0) {
-                        console.log("No buttons were clicked in this attempt. Stopping.");
-                        break; // Prevent infinite loop if no buttons were successfully clicked
-                    }
-        
-                    attempts++;
+              let attempts = 0;
+          
+              while (attempts < 5) { // Limit to 5 attempts to prevent infinite loop
+                await delay(2000); // Allow content to load
+          
+                const buttons = await page.$$(selector);
+          
+                if (buttons.length === 0) {
+                  console.log("No more buttons found.");
+                  break; // No more buttons, exit loop
                 }
+          
+                let clicked = 0;
+          
+                for (let button of buttons) {
+                  try {
+                    if (!button) continue;
+          
+                    // Scroll into view before clicking
+                    await button.evaluate(el => el.scrollIntoView({ behavior: "smooth", block: "center" }));
+          
+                    await delay(1000);
+          
+                    // Check if the button is visible
+                    const isVisible = await page.evaluate(el => {
+                      const rect = el.getBoundingClientRect();
+                      return rect.height > 0 && rect.width > 0;
+                    }, button);
+          
+                    if (!isVisible) {
+                      console.warn("Skipping button: Not visible or detached");
+                      continue;
+                    }
+          
+                    // Click the button
+                    await page.evaluate(el => el.click(), button);
+          
+                    await delay(2000);
+          
+                    clicked++;
+                  } catch (error) {
+                    console.warn(`Skipping non-clickable button:`, error.message);
+                  }
+                }
+          
+                if (clicked === 0) {
+                  console.log("No buttons were clicked in this attempt. Stopping.");
+                  break; // Prevent infinite loop if no buttons were successfully clicked
+                }
+          
+                attempts++;
+              }
             };
-        
-            // Click "X replies" buttons
-            await clickButtons("ytd-comment-renderer #expander");
-        
-            // Click "Show more replies" buttons
-            await clickButtons("ytd-button-renderer#more-replies");
-        
+          
+            // Click "X replies" buttons using the updated selector
+            await clickButtons('button[aria-label*="reply"]');
+          
+            // Click "Show more replies" buttons (if applicable)
+            await clickButtons("ytd-button-renderer #more-replies");
+          
             console.log("Finished expanding replies.");
-        };
-        
-        
-        
-        
+          };
+          
+            
         
         await clickRepliesAndShowMoreReplies(page);
         console.log("finished scrolling. Extracting comments...");
-        const comments = await page.evaluate( () => {
+        const comments = await page.evaluate(() => {
             let allComments = [];
-
-            
-
+          
             document.querySelectorAll("#comment #body").forEach(element => {
-                const commentText = element.querySelector("#content-text")?.innerText.trim();
-                const commentAuthor = element.querySelector("#author-text")?.innerText.trim();
-                const commentLikes = element.querySelector("#vote-count-middle")?.innerText.trim() || "0";
+              const commentText = element.querySelector("#content-text")?.innerText.trim();
+              const commentAuthor = element.querySelector("#author-text")?.innerText.trim();
+              const commentLikes = element.querySelector("#vote-count-middle")?.innerText.trim() || "0";
+          
+              let replies = [];
+          
 
-                
-
-                let replies = [];
-                const reply = element.parentElement.querySelector("#replies #comment #body");
-
-                reply.forEach(item => {
-                    const replyText = item.querySelector("#content-text")?.innerText.trim();
-                    const replyAuthor = item.querySelector("#author-text")?.innerText.trim();
-                    const replyLikes = item.querySelector("#vote-count-middle")?.innerText.trim() || "0";
-                    replies.push({ author: replyAuthor, text: replyText, likes: replyLikes });
-                })
-                allComments.push({ author: commentAuthor, text: commentText, likes: commentLikes })
-
-            })
-
-
+              const replyElements = element.parentElement.querySelectorAll("#replies #comment #body");
+              replyElements.forEach(replyElement => {
+                const replyText = replyElement.querySelector("#content-text")?.innerText.trim();
+                const replyAuthor = replyElement.querySelector("#author-text")?.innerText.trim();
+                const replyLikes = replyElement.querySelector("#vote-count-middle")?.innerText.trim() || "0";
+          
+                replies.push({ author: replyAuthor, text: replyText, likes: replyLikes });
+              });
+          
+              allComments.push({ 
+                author: commentAuthor, 
+                text: commentText, 
+                likes: commentLikes, 
+                replies: replies 
+              });
+            });
+          
             return allComments;
-        })
+          });
+          
+          
         res.json({videoId,comments})
 
     } catch (error) {
@@ -149,6 +159,6 @@ app.get("/getcomments", async (req, res) => {
     }
 })
 
-app.listen(3000, () => {
+app.listen(3001, () => {
     console.log("connected to port");
 })
