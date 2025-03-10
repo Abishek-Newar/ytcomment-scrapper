@@ -1,0 +1,23 @@
+.container{
+  min-height: 90vh;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap:40px
+}
+
+.inputbox{
+  height: 40px;
+  width: 50vw;
+  border-radius: 5px 0 0 5px;
+  padding-left: 10px;
+}
+.btn{
+  height: 46px;
+  width: 140px;
+  border-radius: 0 5px 5px 0;
+  cursor: pointer;
+}
+.desc-text h1 span{
+  color: green;
+}
