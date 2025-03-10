@@ -11,9 +11,12 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@google/generative-ai": "^0.24.0",
+    "@xenova/transformers": "^2.17.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "genai": "^0.0.18",
     "googleapis": "^146.0.0",
     "mongoose": "^8.12.1",
     "nodemon": "^3.1.9",

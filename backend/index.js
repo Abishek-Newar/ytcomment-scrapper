@@ -3,14 +3,17 @@ import { google } from "googleapis";
 import cors from "cors"
 import dotenv from "dotenv"
 import commentsModel from "./db.js";
+import { GoogleGenerativeAI} from "@google/generative-ai"
 dotenv.config();
 
 
 const app = express();
-const PORT =  process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 app.use(cors())
 
-
+console.log("GEMENI_API_KEY:", process.env.GEMENI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMENI_API_KEY)
+const prompt = "review the comments and give me a overview "
 
 const youtube = google.youtube({
   version: "v3",
@@ -27,7 +30,7 @@ async function getAllComments(videoId) {
       const response = await youtube.commentThreads.list({
         part: "snippet",
         videoId: videoId,
-        maxResults: 100, 
+        maxResults: 100,
         pageToken: nextPageToken,
       });
       console.log(count++)
@@ -68,7 +71,7 @@ async function getAllReplies(parentId) {
       const response = await youtube.comments.list({
         part: "snippet",
         parentId: parentId,
-        maxResults: 100, 
+        maxResults: 100,
         pageToken: nextPageToken,
       });
       console.log(count++)
@@ -90,7 +93,7 @@ async function getAllReplies(parentId) {
 
   return replies;
 }
-async function getTitle(videoId){
+async function getTitle(videoId) {
   try {
     const response = await youtube.videos.list({
       id: videoId,
@@ -98,7 +101,7 @@ async function getTitle(videoId){
     });
 
     if (response.data.items.length > 0) {
-      return response.data.items[0].snippet.title; 
+      return response.data.items[0].snippet.title;
     } else {
       throw new Error("Video not found");
     }
@@ -107,16 +110,45 @@ async function getTitle(videoId){
     return null;
   }
 }
+
+// async function getEmbedding(data) {
+//   const model = genAI.getGenerativeModel({model: 'text-embedding-004'})
+  
+//   const result = await model.embedContent(data)
+//   return result.embedding.data;
+// }
+
+// function extractTextFromJSON(data) {
+//   let text = '';
+
+//   if (typeof data === 'string') {
+//     text += data + ' ';
+//   } else if (Array.isArray(data)) {
+//     for (const item of data) {
+//       text += extractTextFromJSON(item);
+//     }
+//   } else if (typeof data === 'object' && data !== null) {
+//     for (const key in data) {
+//       if (data.hasOwnProperty(key)) {
+//         text += extractTextFromJSON(data[key]);
+//       }
+//     }
+//   }
+
+//   return text;
+// }
+
+
 app.get("/getcomments", async (req, res) => {
-  const url= req.query.url;
+  const url = req.query.url;
 
   if (!url) {
     return res.status(400).json({ error: "Missing video parameter" });
   }
   let videoId = "";
-  try{
+  try {
     videoId = url.split("v=")[1].split("&")[0];
-  }catch(error){
+  } catch (error) {
     console.log(error);
     res.json({
       error: "invalid url"
@@ -131,30 +163,100 @@ app.get("/getcomments", async (req, res) => {
     const checkDatabase = await commentsModel.findOne({
       videoId
     })
-    if(checkDatabase){
+    // const text = extractTextFromJSON(comments)
+    // const contentEmbeddings = getEmbedding(text)
+    // const promptEmbeddings = getEmbedding(prompt)
+
+    // const messages = `${prompt}\n\nContent:\n${text}`
+    // const model =  genAI.getGenerativeModel({model: 'models/gemini-2.0-flash'});
+    // const chats = await model.generateContent(messages)
+    // console.log(chats.response.text())
+
+    if (checkDatabase) {
       await commentsModel.updateOne({
         videoId
-      },{
+      }, {
         comments
       })
-    }else{
+    } else {
       await commentsModel.create({
         videoId,
-        comments
+        comments,
       })
     }
-    
+
     res.json({
       videoId,
       comments,
       title
     });
   } catch (error) {
-    console.log("failed to fetch comments",error)
+    console.log("failed to fetch comments", error)
     res.status(500).json({ error: "Failed to fetch comments" });
   }
 });
 
+
+// app.get("/addtochatgpt", async (req, res) => {
+//   const filePath = req.query.filePath;
+
+//  try {
+//   const browser = await puppeteer.launch({ headless: 'new' , args: ['--start-maximized']});
+//   const page = await browser.newPage();
+//   await page.setViewport({ width: 1920, height: 1080 });
+
+//   await page.goto('https://chatgpt.com/g/g-p-67ceb0276ad081918a369c3d5f17808d-youtube-scrapper/project');
+//   console.log("page visited")
+
+//   // await page.waitForSelector('text="Youtube Scrapper"');
+//   // await page.click('text="Youtube Scrapper"');
+
+
+//   // await page.waitForSelector('text="New Chat"');
+//   // await page.click('text="New Chat"');
+
+//   // await page.waitForSelector('text="New chat in "youtube Scrapper""');
+//   // await page.click('text="New chat in "youtube Scrapper""');
+
+//   await page.waitForSelector('button[aria-label="Upload files and more"]', { timeout: 60000 });
+//   await page.click('button[aria-label="Upload files and more"]');
+
+
+//   await page.waitForXPath("//div[contains(text(), 'Upload from computer')]");
+//   const [uploadButton] = await page.$x("//div[contains(text(), 'Upload from computer')]");
+//   await uploadButton.click();
+
+//   await page.waitForSelecotr('input[type="file"]',{visible: true});
+
+//   const fileInput = await page.$('input[type="file"]');
+//   await fileInput.uploadFile(path.resolve(filePath));
+
+
+//   await new Promise((resolve)=>{setTimeout(resolve(),3000)});
+
+
+//   await page.type('textarea','')
+
+
+//   await page.keyboard.press('Enter');
+
+//   await new Promise((resolve)=>{setTimeout(resolve(),5000)});
+//   res.json({
+//     msg: "uploaded to chatgpt"
+//   })
+//   await browser.close()
+//  } catch (error) {
+//   console.log(error)
+//   console.log("error while uplading to chatgpt");
+//   res.status(500).json({
+
+//     error,
+//     msg: "error while uploading to chatgpt"
+//   })
+//  }
+
+
+// })
 
 app.listen(PORT, () => {
   console.log(`Server running on ${PORT}`);
