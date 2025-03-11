@@ -30,9 +30,28 @@ function App() {
     try {
       const response = await fetch(`http://localhost:3000/getcomments?url=${youtubeUrl.current.value}`);
       const res = await response.json();
-      downloadJsonFile(res.comments,res.videoId)
+      
       console.log(res)
-      ref.current.innerHTML = `<h1><span>Title:</span> ${res.title} <br> <span>Fetched Comments...</span></h1>`
+
+      if(response.ok){
+        if(res.comments.length > 0){
+          downloadJsonFile(res.comments,res.videoId);
+          ref.current.innerHTML = `<h1><span>Title:</span> ${res.title} <br> <span>Fetched Comments...</span></h1>`
+  
+          // try {
+          //   const responses = await fetch(`http://localhost:3000/addtochatgpt?filePath?filePath=C:/Users/hr/Downloads/${res.videoId}.json`)
+          //   if(responses.ok){
+          //     ref.current.innerHTML = `<h1><span>Title:</span> ${res.title} <br> <span>Added to chatgpt...</span></h1>`
+          //   }
+          // } catch (error) {
+          //   console.log(error)
+          //   ref.current.innerHTML = `<h1><span>Title:</span> ${res.title} <br> <span style="color:red;">Error adding to chatgpt</span></h1>`
+          // }
+        }else{
+          ref.current.innerHTML = `<h1><span>Title:</span> ${res.title} <br> <span style="color:red;">There are no comments in the video</span></h1>`
+        }
+      }
+      
     } catch (error) {
       console.log("error whiel fetching data from backend",error)
       alert("error while fetching data.. please try again later")

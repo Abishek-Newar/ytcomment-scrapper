@@ -1,22 +1,38 @@
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 .container{
-  min-height: 90vh;
+  height: 100vh;
   text-align: center;
   display: flex;
   flex-direction: column;
-  gap:40px
+  padding-top: 30px;
+  gap:40px;
+  background: #09090B;
+   color: white;
+}
+
+.main-form label{
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .inputbox{
-  height: 40px;
+  height: 45px;
   width: 50vw;
   border-radius: 5px 0 0 5px;
   padding-left: 10px;
 }
 .btn{
-  height: 46px;
+  height: 42px;
   width: 140px;
   border-radius: 0 5px 5px 0;
   cursor: pointer;
+  font-weight: 900;
+  border: none;
 }
 .desc-text h1 span{
   color: green;
