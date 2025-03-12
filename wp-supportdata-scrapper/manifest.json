@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "WordPress Support Scraper",
+  "version": "1.0",
+  "description": "A Chrome extension to scrape WordPress support data from YouTube videos",
+  "action": {
+    "default_popup": "index.html"
+  },
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
