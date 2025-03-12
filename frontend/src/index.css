@@ -37,3 +37,8 @@
 .desc-text h1 span{
   color: green;
 }
+
+.text-area{
+  width: 50vw;
+  height: 100px;
+}
